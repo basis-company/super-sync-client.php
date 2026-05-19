@@ -58,12 +58,25 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
+      - name: Wait for PostgreSQL
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h localhost -p 5432 -U user -d supersync >/dev/null 2>&1; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "PostgreSQL did not start in time"
+          exit 1
+
       - name: Start sync server
         run: |
+          SERVICE_NETWORK=$(docker network ls --filter name=github_network --format '{{.Name}}' | head -1)
           docker run -d \
             --name sync-server \
-            -p 3000:1900 \
-            -e DATABASE_URL="postgresql://user:password@localhost:5432/supersync" \
+            --network "$SERVICE_NETWORK" \
+            -e DATABASE_URL="postgresql://user:password@postgres:5432/supersync" \
             -e JWT_SECRET="85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b" \
             -e NODE_ENV=development \
             ghcr.io/johannesjo/supersync:latest

@@ -45,20 +45,6 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-      sync-server:
-        image: ghcr.io/johannesjo/supersync:latest
-        ports:
-          - 3000:1900
-        env:
-          DATABASE_URL: "postgresql://user:password@postgres:5432/supersync"
-          JWT_SECRET: "85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b"
-          NODE_ENV: development
-        options: >-
-          --health-cmd="curl -f http://localhost:1900/"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -71,6 +57,16 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
+
+      - name: Start sync server
+        run: |
+          docker run -d \
+            --name sync-server \
+            -p 3000:1900 \
+            -e DATABASE_URL="postgresql://user:password@localhost:5432/supersync" \
+            -e JWT_SECRET="85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b" \
+            -e NODE_ENV=development \
+            ghcr.io/johannesjo/supersync:latest
 
       - name: Wait for sync server
         run: |
@@ -86,3 +82,7 @@ jobs:
 
       - name: Run integration tests
         run: vendor/bin/phpunit tests/IntegrationTest.php
+
+      - name: Cleanup sync server
+        if: always()
+        run: docker rm -f sync-server

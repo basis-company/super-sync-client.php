@@ -1,5 +1,7 @@
 # super-sync-client
 
+> **⚠️ Disclaimer:** This is an **unofficial** client. It is not affiliated with, endorsed by, or connected to Super Productivity or its developers. Use it at your own risk.
+
 A PHP client for the [Super Productivity](https://super-productivity.com/) sync server with end-to-end encryption support.
 
 ## Installation
@@ -15,6 +17,7 @@ composer require basis-company/super-sync-client
 
 use Basis\SuperSyncClient\Client;
 use Basis\SuperSyncClient\Workspace;
+use Basis\SuperSyncClient\Task;
 
 $client = new Client($accessToken, encryptionKey: 'your-encryptKey');
 $ws = new Workspace($client);

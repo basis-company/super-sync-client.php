@@ -9,10 +9,10 @@ use Basis\SuperSyncClient\Workspace;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Регрессионные тесты на баги Workspace::applyOp() — payload может прийти не массивом.
+ * Regression tests for Workspace::applyOp() bugs — payload may not be an array.
  *
- * Сервер иногда возвращает payload как строку (JSON string вместо объекта),
- * что ломает array_merge() в applyOp.
+ * The server sometimes returns payload as a string (JSON string instead of object),
+ * which breaks array_merge() in applyOp.
  */
 class WorkspaceBugTest extends TestCase
 {
@@ -28,7 +28,7 @@ class WorkspaceBugTest extends TestCase
     }
 
     /**
-     * CRT с payload-строкой должен не падать (просто игнорить или приводить к массиву).
+     * CRT with string payload should not crash (just ignore or convert to array).
      */
     public function testCrtWithStringPayloadDoesNotExplode(): void
     {
@@ -50,13 +50,13 @@ class WorkspaceBugTest extends TestCase
         $ws = new Workspace($this->clientMock);
         $ws->fetch();
 
-        // Не должно выбросить TypeError, данные должны сохраниться
+        // Should not throw TypeError, data should be preserved
         $this->assertArrayHasKey('TASK', $ws->getState());
         $this->assertArrayHasKey('task-1', $ws->getState()['TASK']);
     }
 
     /**
-     * UPD с payload-строкой должен не падать.
+     * UPD with string payload should not crash.
      */
     public function testUpdateWithStringPayloadDoesNotExplode(): void
     {
@@ -92,7 +92,7 @@ class WorkspaceBugTest extends TestCase
     }
 
     /**
-     * UPD с пустым payload (нет payload-ключа) должен не падать.
+     * UPD with missing payload (no payload key) should not crash.
      */
     public function testUpdateWithMissingPayloadDoesNotExplode(): void
     {
@@ -112,7 +112,7 @@ class WorkspaceBugTest extends TestCase
                             'opType' => 'UPD',
                             'entityType' => 'PROJECT',
                             'entityId' => 'proj-1',
-                            // payload отсутствует
+                            // payload is missing
                         ],
                     ],
                 ],
@@ -122,12 +122,12 @@ class WorkspaceBugTest extends TestCase
         $ws = new Workspace($this->clientMock);
         $ws->fetch();
 
-        // Без payload должен сохраниться initial
+        // Without payload, initial should be preserved
         $this->assertArrayHasKey('proj-1', $ws->getState()['PROJECT']);
     }
 
     /**
-     * Нормальный массивный payload должен продолжать работать (регрессия).
+     * Normal array payload should continue to work (regression test).
      */
     public function testArrayPayloadContinuesToWork(): void
     {
@@ -155,7 +155,7 @@ class WorkspaceBugTest extends TestCase
     }
 
     /**
-     * Смешанный сценарий: CRT(массив) → UPD(строка) → UPD(массив).
+     * Mixed scenario: CRT(array) → UPD(string) → UPD(array).
      */
     public function testMixedPayloadTypesInSequence(): void
     {

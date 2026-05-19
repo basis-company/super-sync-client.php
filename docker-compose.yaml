@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: supersync
+    ports:
+      - "5432:5432"
+
+  sync-server:
+    image: ghcr.io/johannesjo/supersync:latest
+    ports:
+      - "3000:1900"
+    environment:
+      DATABASE_URL: "postgresql://user:password@postgres:5432/supersync"
+      JWT_SECRET: "85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b"
+      NODE_ENV: development
+    depends_on:
+      - postgres

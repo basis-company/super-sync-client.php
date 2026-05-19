@@ -1,5 +1,7 @@
 # super-sync-client
 
+[![Tests](https://github.com/basis-company/super-sync-client/actions/workflows/tests.yml/badge.svg)](https://github.com/basis-company/super-sync-client/actions/workflows/tests.yml)
+
 > **⚠️ Disclaimer:** This is an **unofficial** client. It is not affiliated with, endorsed by, or connected to Super Productivity or its developers. Use it at your own risk.
 
 A PHP client for the [Super Productivity](https://super-productivity.com/) sync server with end-to-end encryption support.

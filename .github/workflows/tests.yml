@@ -7,7 +7,8 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  unit:
+    name: Unit tests
     runs-on: ubuntu-latest
 
     steps:
@@ -23,5 +24,67 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run tests
-        run: vendor/bin/phpunit tests/
+      - name: Run unit tests
+        run: vendor/bin/phpunit tests/WorkspaceBugTest.php
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: supersync
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      sync-server:
+        image: ghcr.io/johannesjo/supersync:latest
+        ports:
+          - 3000:1900
+        env:
+          DATABASE_URL: "postgresql://user:password@postgres:5432/supersync"
+          JWT_SECRET: "85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b"
+          NODE_ENV: development
+        depends_on:
+          - postgres
+        options: >-
+          --health-cmd="curl -f http://localhost:1900/"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: openssl, sodium, mbstring
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Wait for sync server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -f http://localhost:3000/ >/dev/null 2>&1; then
+              echo "Sync server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Sync server did not start in time"
+          exit 1
+
+      - name: Run integration tests
+        run: vendor/bin/phpunit tests/IntegrationTest.php

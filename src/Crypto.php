@@ -91,7 +91,7 @@ class Crypto
         );
 
         if ($plaintext === false) {
-            // Попробуем с tag внутри ciphertext (некоторые версии OpenSSL требуют так)
+            // Try with tag inside ciphertext (some OpenSSL versions require this)
             $plaintext = openssl_decrypt(
                 $ctAndTag,
                 'AES-256-GCM',

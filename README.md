@@ -78,7 +78,66 @@ $ws->fetch();
 
 If `encryptionKey` is not provided, `fetch(true)` returns the unencrypted state as-is (usually binary garbage for encrypted servers).
 
+## Task Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique task ID |
+| `title` | `string` | Task title |
+| `isDone` | `bool` | Whether the task is completed |
+| `projectId` | `?string` | Associated project ID |
+| `dueDate` | `?int` | Due date in milliseconds (Unix timestamp * 1000) |
+| `start` | `?int` | Start time in milliseconds (Unix timestamp * 1000) |
+| `startMode` | `?int` | Start mode (0=none, 1=remind, 2=auto) |
+| `estimate` | `?int` | Estimated time in seconds |
+| `estimatedTimeSpent` | `?int` | Estimated time spent in seconds |
+| `timeSpent` | `?int` | Actual time spent in seconds |
+| `notes` | `string` | Task notes/description |
+| `subtasks` | `array` | Subtasks (array of arrays) |
+| `reminders` | `array` | Reminders (array of arrays) |
+| `recurring` | `bool` | Whether the task is recurring |
+| `tags` | `array` | Task tags |
+| `priority` | `int` | Priority (0=none, 1=low, 2=medium, 3=high) |
+| `doneDate` | `?int` | Date when task was done (milliseconds) |
+| `createdAt` | `?int` | Date when task was created (milliseconds) |
+| `updatedAt` | `?int` | Date when task was last updated (milliseconds) |
+
+## Task Helper Methods
+
+| Method | Description |
+|---|---|
+| `isOverdue()` | Check if task is overdue (dueDate is in the past and not done) |
+| `isDueToday()` | Check if task is due today |
+| `isDueInFuture()` | Check if task is due in the future |
+| `getDueDateFormatted()` | Get human-readable due date |
+| `getStartFormatted()` | Get human-readable start time |
+| `getEstimateFormatted()` | Get estimated time in HH:MM format |
+| `getTimeSpentFormatted()` | Get time spent in HH:MM format |
+
 ## Workspace
+
+## Project Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique project ID |
+| `title` | `string` | Project title |
+| `themeColor` | `?string` | Theme color (hex) |
+| `order` | `int` | Display order |
+| `archived` | `bool` | Whether the project is archived |
+| `reminderIds` | `array` | Associated reminder IDs |
+| `createdAt` | `?int` | Date when project was created (milliseconds) |
+| `updatedAt` | `?int` | Date when project was last updated (milliseconds) |
+
+## Project Helper Methods
+
+| Method | Description |
+|---|---|
+| `isArchived()` | Check if project is archived |
+| `archive()` | Archive the project |
+| `unarchive()` | Unarchive the project |
+| `getThemeColor()` | Get human-readable theme color |
+| `setThemeColor(string)` | Set theme color from hex string |
 
 | Method | Description |
 |---|---|
@@ -139,6 +198,134 @@ $newTask = new Task(
 
 $ws->add($newTask);
 $ws->commit();
+```
+
+
+### Create a new project
+
+```php
+<?php
+
+use Basis\SuperSyncClient\Client;
+use Basis\SuperSyncClient\Workspace;
+use Basis\SuperSyncClient\Project;
+
+$client = new Client($accessToken, encryptionKey: 'your-encryptKey');
+$ws = new Workspace($client);
+$ws->fetch();
+
+// Create a new project
+$newProject = new Project(
+    id: $ws->generateId(),
+    title: 'My Project',
+    themeColor: '#4fc3f7',
+    order: 0,
+);
+
+$ws->add($newProject);
+$ws->commit();
+
+// Read back and check
+$found = $ws->findOne(Project::class, ['id' => $newProject->id]);
+echo 'Project: ' . $found->title . PHP_EOL;
+echo 'Color: ' . $found->getThemeColor() . PHP_EOL;
+echo 'Archived: ' . ($found->isArchived() ? 'yes' : 'no') . PHP_EOL;
+
+// Archive the project
+$found->archive();
+$ws->commit();
+
+
+### Create a new project
+
+```php
+<?php
+
+use Basis\SuperSyncClient\Client;
+use Basis\SuperSyncClient\Workspace;
+use Basis\SuperSyncClient\Project;
+
+$client = new Client($accessToken, encryptionKey: 'your-encryptKey');
+$ws = new Workspace($client);
+$ws->fetch();
+
+// Create a new project
+$newProject = new Project(
+    id: $ws->generateId(),
+    title: 'My Project',
+    themeColor: '#4fc3f7', // hex color
+);
+
+$ws->add($newProject);
+$ws->commit();
+
+// Read back and check
+$found = $ws->findOne(Project::class, ['id'] => $newProject->id);
+if ($found) {
+    echo 'Project: ' . $found->title . ' (color: ' . $found->getThemeColor() . ')' . PHP_EOL;
+}
+```
+### Create task with scheduling and time estimation
+
+```php
+<?php
+
+use Basis\SuperSyncClient\Client;
+use Basis\SuperSyncClient\Workspace;
+use Basis\SuperSyncClient\Task;
+
+$client = new Client($accessToken, encryptionKey: 'your-encryptKey');
+$ws = new Workspace($client);
+$ws->fetch();
+
+// Create a task with due date and estimate
+$task = new Task(
+    id: $ws->generateId(),
+    title: 'Task with schedule',
+    isDone: false,
+    dueDate: time() * 1000 + 86400000, // 1 day from now (milliseconds)
+    estimate: 3600, // 1 hour in seconds
+    notes: 'Important task with deadline',
+);
+
+$ws->add($task);
+$ws->commit();
+
+// Read back and check
+$found = $ws->findOne(Task::class, ['id' => $task->id]);
+echo 'Due: ' . $found->getDueDateFormatted() . PHP_EOL; // 2026-05-21 23:50:00
+echo 'Estimate: ' . $found->getEstimateFormatted() . PHP_EOL; // 01:00
+echo 'Overdue: ' . ($found->isOverdue() ? 'yes' : 'no') . PHP_EOL;
+```
+
+### Update task scheduling
+
+```php
+<?php
+
+use Basis\SuperSyncClient\Client;
+use Basis\SuperSyncClient\Workspace;
+use Basis\SuperSyncClient\Task;
+
+$client = new Client($accessToken, encryptionKey: 'your-encryptKey');
+$ws = new Workspace($client);
+$ws->fetch();
+
+// Find and update task
+$task = $ws->findOne(Task::class, ['id' => 'task-123']);
+if ($task) {
+    // Set due date to tomorrow
+    $task->dueDate = strtotime('tomorrow') * 1000;
+    
+    // Set start time
+    $task->start = time() * 1000;
+    $task->startMode = 1; // remind
+    
+    // Set estimate
+    $task->estimate = 7200; // 2 hours
+    
+    $ws->commit();
+}
 ```
 
 ## Requirements

@@ -43,7 +43,7 @@ class Workspace
         foreach ($state as $type => $entities) {
             if (!is_array($entities)) continue;
 
-            // Сервер может прислать {'ids': [...], 'entities': {id: data}} структуру
+            // Server may send {'ids': [...], 'entities': {id: data}} structure
             if (isset($entities['entities']) && is_array($entities['entities'])) {
                 $entities = $entities['entities'];
             }
@@ -65,7 +65,7 @@ class Workspace
         $exclude = $this->serverSeq === 0 ? null : $this->api->getClientId();
         $result = $this->api->downloadOps($this->serverSeq, $exclude);
         $ops = $result['ops'] ?? [];
-        // Не сбрасываем serverSeq назад — сервер может вернуть 0 при пустом ответе
+        // Don't reset serverSeq backwards — server may return 0 on empty response
         $newSeq = $result['latestSeq'] ?? $this->serverSeq;
         if ($newSeq > $this->serverSeq) {
             $this->serverSeq = $newSeq;
@@ -231,7 +231,7 @@ class Workspace
 
         if ($entityId === null) return;
 
-        // Сервер может вернуть payload как JSON-строку — приводим к массиву
+        // Server may return payload as JSON string — convert to array
         if (is_string($payload)) {
             $payload = json_decode($payload, true) ?? [];
         }

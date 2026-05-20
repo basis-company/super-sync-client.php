@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org"
+<phpunit xmlns:xsi="http://www.w3"
          bootstrap="vendor/autoload.php"
          colors="true">
     <testsuites>
         <testsuite name="Integration">
             <directory>tests</directory>
+            <exclude>tests/E2E</exclude>
+        </testsuite>
+        <testsuite name="E2E">
+            <directory>tests/E2E</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <env name="SYNC_HOST" value="http://localhost:3000"/>
+        <env name="SYNC_JWT_SECRET" value="85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b"/>
+        <env name="WEB_CLIENT_URL" value="http://localhost:8080"/>
+    </php>
 </phpunit>

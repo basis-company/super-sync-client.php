@@ -1,4 +1,7 @@
 services:
+  # ──────────────────────────────────────────────
+  # Database
+  # ──────────────────────────────────────────────
   postgres:
     image: postgres:13
     environment:
@@ -7,7 +10,15 @@ services:
       POSTGRES_DB: supersync
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d supersync"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # ──────────────────────────────────────────────
+  # Super Sync Server
+  # ──────────────────────────────────────────────
   sync-server:
     image: ghcr.io/johannesjo/supersync:latest
     ports:
@@ -17,4 +28,49 @@ services:
       JWT_SECRET: "85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b"
       NODE_ENV: development
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+  # ──────────────────────────────────────────────
+  # Super Productivity (OFFICIAL DOCKER IMAGE)
+  # ──────────────────────────────────────────────
+  super-productivity:
+    build:
+      context: tests/E2E/web-client
+      dockerfile: Dockerfile.sp
+    ports:
+      - "8080:80"
+    environment:
+      SYNC_HOST: http://sync-server:1900
+      SYNC_TOKEN: "PLACEHOLDER_TOKEN"  # Will be replaced in tests
+    depends_on:
+      - sync-server
+
+  # ──────────────────────────────────────────────
+  # Test Runner (PHP + Panther + Chrome)
+  # ──────────────────────────────────────────────
+  test-runner:
+    build:
+      context: .
+      dockerfile: tests/E2E/Dockerfile
+    environment:
+      SYNC_HOST: http://sync-server:1900
+      SYNC_JWT_SECRET: "85b62616ab5ce2aceac1f9191240207bab896dd8ccd84b45804a26095d19878b"
+      SUPER_PRODUCTIVITY_URL: http://super-productivity:80
+      PANTHER_CHROME_DRIVER_HOST: chrome
+      PANTHER_NO_SANDBOX: "1"
+    depends_on:
+      - sync-server
+      - chrome
+    volumes:
+      - .:/app
+
+  # ──────────────────────────────────────────────
+  # Chrome / ChromeDriver for Panther
+  # ──────────────────────────────────────────────
+  chrome:
+    image: ghcr.io/panthera-org/chrome-for-testing:latest
+    ports:
+      - "9515:9515"
+    environment:
+      - CHROMIUM_FLAGS=--no-sandbox --disable-gpu --disable-dev-shm-usage

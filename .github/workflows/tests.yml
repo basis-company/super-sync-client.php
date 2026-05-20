@@ -47,6 +47,11 @@ jobs:
       - name: Start sync server
         run: docker compose up -d
 
+      - name: Create test user
+        run: |
+          docker compose exec -T postgres psql -U user -d supersync -c \
+            "INSERT INTO users (id, email, password, created, updated) VALUES (1, 'test@example.com', '\$2y\$10\$dummyhashforthetest', NOW(), NOW()) ON CONFLICT DO NOTHING;"
+
       - name: Wait for sync server
         run: |
           for i in $(seq 1 60); do
